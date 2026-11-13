@@ -1,0 +1,52 @@
+{
+  "name": "desktopaufnahme",
+  "version": "0.1.0",
+  "description": "Bildschirm-, Kamera- und Audio-Rekorder mit Effekten und Zeitplan",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tools/test.js",
+    "dist": "electron-builder --win --x64",
+    "icon": "node tools/make-icon.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Blickfeld-KevinLemaire/desktopaufnahme.git"
+  },
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/Blickfeld-KevinLemaire/desktopaufnahme/issues"
+  },
+  "homepage": "https://github.com/Blickfeld-KevinLemaire/desktopaufnahme#readme",
+  "devDependencies": {
+    "electron": "^45.3.1",
+    "electron-builder": "^26.18.0"
+  },
+  "optionalDependencies": {
+    "uiohook-napi": "^1.5.5"
+  },
+  "private": true,
+  "build": {
+    "appId": "de.blickfeld.desktopaufnahme",
+    "productName": "Desktopaufnahme",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "**/node_modules/uiohook-napi/**"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "language": "1031"
+    }
+  }
+}

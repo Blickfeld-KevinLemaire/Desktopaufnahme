@@ -1,0 +1,5 @@
+html,body{margin:0;height:100%;overflow:hidden;cursor:crosshair;background:rgba(0,0,0,.35);user-select:none;font:14px "Segoe UI",system-ui,sans-serif}
+#hint{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:8px 16px;border-radius:6px;opacity:.9}
+#sel{position:fixed;border:2px dashed #ff3b30;background:rgba(255,255,255,.06);box-shadow:0 0 0 9999px rgba(0,0,0,.35)}
+#dim{position:absolute;left:0;top:-26px;background:#ff3b30;color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;white-space:nowrap}
+body{background:transparent}

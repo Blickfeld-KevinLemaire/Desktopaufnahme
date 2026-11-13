@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: netcam:; media-src 'self' blob: mediastream:; connect-src 'self' netcam:; style-src 'self'; script-src 'self'">
+<title>Desktopaufnahme</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="toolbar" role="toolbar">
+  <button id="btn-rec" class="tb big rec" title="Aufnahme starten (Strg+Umschalt+R)"><span class="ico rec-dot"></span><span class="lbl">Aufnehmen</span></button>
+  <button id="btn-pause" class="tb big" disabled title="Pause (Strg+Umschalt+P)"><span class="ico pause"></span><span class="lbl">Pause</span></button>
+  <button id="btn-stop" class="tb big" disabled title="Stopp"><span class="ico stop"></span><span class="lbl">Stopp</span></button>
+  <span class="sep"></span>
+  <button id="btn-shot" class="tb" title="Schnappschuss (Strg+Umschalt+S)"><span class="ico cam"></span><span class="lbl">Schnappschuss</span></button>
+  <span class="sep"></span>
+  <button id="btn-effects" class="tb" title="Effekte"><span class="ico fx"></span><span class="lbl">Effekte</span></button>
+  <button id="btn-schedule" class="tb" title="Zeitplan"><span class="ico clock"></span><span class="lbl">Zeitplan</span></button>
+  <button id="btn-options" class="tb" title="Optionen"><span class="ico gear"></span><span class="lbl">Optionen</span></button>
+  <span class="grow"></span>
+  <div class="timer" id="timer" aria-live="off">00:00:00</div>
+</header>
+
+<main class="layout">
+  <nav class="sources" aria-label="Aufnahmequelle">
+    <h3>Aufnahmequelle</h3>
+    <button class="src" data-source="screen"><span class="ico monitor"></span><span><b>Bildschirm</b><small>Ganzer Desktop</small></span></button>
+    <button class="src" data-source="window"><span class="ico window"></span><span><b>Fenster</b><small>Einzelnes Programm</small></span></button>
+    <button class="src" data-source="region"><span class="ico region"></span><span><b>Bereich</b><small>Ausschnitt aufziehen</small></span></button>
+    <button class="src" data-source="webcam"><span class="ico webcam"></span><span><b>Webcam</b><small>Kamera am Rechner</small></span></button>
+    <button class="src" data-source="netcam"><span class="ico net"></span><span><b>Netzwerkkamera</b><small>IP-Kamera (MJPEG/HTTP)</small></span></button>
+    <button class="src" data-source="device"><span class="ico device"></span><span><b>Videogerät</b><small>Capture-Karte, Camcorder</small></span></button>
+  </nav>
+
+  <section class="center">
+    <div class="stage" id="stage">
+      <canvas id="preview" width="1280" height="720"></canvas>
+      <div class="stage-msg" id="stage-msg">Quelle wird gestartet …</div>
+      <div class="rec-badge" id="rec-badge" hidden>● REC</div>
+      <div class="countdown" id="countdown" hidden></div>
+    </div>
+    <div class="source-opts" id="source-opts">
+      <div class="opt" data-for="screen"><label>Bildschirm <select id="sel-display"></select></label></div>
+      <div class="opt" data-for="window"><label>Fenster <select id="sel-window"></select></label><button id="btn-refresh-win" class="small">Aktualisieren</button></div>
+      <div class="opt" data-for="region"><label>Bildschirm <select id="sel-region-display"></select></label><button id="btn-region" class="small">Bereich wählen …</button><span id="region-info" class="muted"></span></div>
+      <div class="opt" data-for="webcam"><label>Webcam <select id="sel-cam"></select></label></div>
+      <div class="opt" data-for="netcam"><label>Adresse <input id="net-url" type="text" placeholder="http://benutzer:passwort@192.168.0.20/video.mjpg" size="46"></label><button id="btn-net-go" class="small">Verbinden</button></div>
+      <div class="opt" data-for="device"><label>Videogerät <select id="sel-device"></select></label></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <fieldset>
+      <legend>Audio</legend>
+      <label class="check"><input type="checkbox" data-bind="audio.system"> Ton vom Desktop (Systemton)</label>
+      <div class="row"><span>Pegel</span><input type="range" min="0" max="200" data-bind="audio.sysGain"><output></output></div>
+      <label class="check"><input type="checkbox" data-bind="audio.mic"> Mikrofon aufnehmen</label>
+      <select id="sel-mic"></select>
+      <div class="row"><span>Pegel</span><input type="range" min="0" max="200" data-bind="audio.micGain"><output></output></div>
+      <div class="meter" aria-label="Aussteuerung"><i id="meter-bar"></i></div>
+      <p class="hint" id="audio-hint"></p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Ausgabe</legend>
+      <label>Speichern in</label>
+      <div class="row"><input id="out-folder" type="text" readonly><button id="btn-folder" class="small">…</button></div>
+      <div class="grid2">
+        <label>Format <select id="sel-format" data-bind="output.format"></select></label>
+        <label>Qualität <select data-bind="output.quality"><option value="low">Niedrig</option><option value="medium">Mittel</option><option value="high">Hoch</option><option value="ultra">Sehr hoch</option></select></label>
+        <label>Bildrate <select data-bind="output.fps" data-num><option>10</option><option>15</option><option>24</option><option>30</option><option>60</option></select></label>
+        <label>Größe <select data-bind="output.scale" data-num><option value="100">100 %</option><option value="75">75 %</option><option value="50">50 %</option><option value="25">25 %</option></select></label>
+      </div>
+    </fieldset>
+
+    <fieldset class="grow-fs">
+      <legend>Letzte Aufnahmen</legend>
+      <ul id="recent" class="recent"></ul>
+    </fieldset>
+  </aside>
+</main>
+
+<footer class="statusbar">
+  <span id="st-state">Bereit</span>
+  <span id="st-info"></span>
+  <span id="st-size"></span>
+  <span class="grow"></span>
+  <span id="st-keys"></span>
+</footer>
+
+<!-- Effekte -->
+<dialog id="dlg-effects" class="dlg wide">
+  <h2>Effekte</h2>
+  <p class="hint">Alle Effekte wirken sofort in der Vorschau und in der Aufnahme.</p>
+  <div class="tabs" role="tablist">
+    <button data-tab="fx-camera" class="on">Kamera</button><button data-tab="fx-text">Text</button><button data-tab="fx-color">Farbe</button>
+    <button data-tab="fx-filter">Filter</button><button data-tab="fx-mirror">Spiegeln</button><button data-tab="fx-water">Wasserzeichen</button>
+    <button data-tab="fx-keys">Tastenanschläge</button><button data-tab="fx-bg">Hintergrund</button>
+  </div>
+  <div class="tabpane on" id="fx-camera">
+    <label class="check"><input type="checkbox" data-bind="effects.camera.enabled"> Kameraüberlagerung einblenden (Bild im Bild)</label>
+    <label>Kamera <select id="fx-cam-select"></select></label>
+    <div class="grid2">
+      <label>Position <select data-bind="effects.camera.position">
+        <option value="tl">Oben links</option><option value="tr">Oben rechts</option><option value="bl">Unten links</option><option value="br">Unten rechts</option><option value="c">Mitte</option></select></label>
+      <label>Form <select data-bind="effects.camera.shape"><option value="rect">Rechteck</option><option value="round">Rund</option></select></label>
+    </div>
+    <div class="row"><span>Größe</span><input type="range" min="10" max="60" data-bind="effects.camera.size"><output></output></div>
+    <label class="check"><input type="checkbox" data-bind="effects.camera.mirror"> Kamerabild spiegeln</label>
+    <label class="check"><input type="checkbox" data-bind="effects.camera.border"> Rahmen</label>
+  </div>
+  <div class="tabpane" id="fx-text">
+    <label class="check"><input type="checkbox" data-bind="effects.text.enabled"> Textlegende einblenden</label>
+    <label>Text <input type="text" data-bind="effects.text.text" size="40"></label>
+    <p class="hint">Platzhalter: {datum} und {zeit} werden live ersetzt.</p>
+    <div class="grid2">
+      <label>Position <select data-bind="effects.text.position">
+        <option value="tl">Oben links</option><option value="tc">Oben Mitte</option><option value="tr">Oben rechts</option>
+        <option value="bl">Unten links</option><option value="bc">Unten Mitte</option><option value="br">Unten rechts</option><option value="c">Mitte</option></select></label>
+      <label>Schriftfarbe <input type="color" data-bind="effects.text.color"></label>
+      <label>Hintergrundfarbe <input type="color" data-bind="effects.text.bg"></label>
+    </div>
+    <div class="row"><span>Schriftgröße</span><input type="range" min="12" max="96" data-bind="effects.text.size"><output></output></div>
+    <div class="row"><span>Hintergrund-Deckkraft</span><input type="range" min="0" max="100" data-bind="effects.text.bgAlpha"><output></output></div>
+  </div>
+  <div class="tabpane" id="fx-color">
+    <div class="row"><span>Helligkeit</span><input type="range" min="20" max="200" data-bind="effects.color.brightness"><output></output></div>
+    <div class="row"><span>Kontrast</span><input type="range" min="20" max="200" data-bind="effects.color.contrast"><output></output></div>
+    <div class="row"><span>Sättigung</span><input type="range" min="0" max="300" data-bind="effects.color.saturate"><output></output></div>
+    <div class="row"><span>Farbton</span><input type="range" min="0" max="360" data-bind="effects.color.hue"><output></output></div>
+    <label class="check"><input type="checkbox" data-bind="effects.color.tintEnabled"> Farbüberlagerung</label>
+    <div class="grid2"><label>Farbe <input type="color" data-bind="effects.color.tint"></label></div>
+    <div class="row"><span>Stärke</span><input type="range" min="0" max="80" data-bind="effects.color.tintAlpha"><output></output></div>
+    <button class="small" id="fx-color-reset">Zurücksetzen</button>
+  </div>
+  <div class="tabpane" id="fx-filter">
+    <label>Filter <select data-bind="effects.filter.type">
+      <option value="none">Kein Filter</option><option value="grayscale">Graustufen</option><option value="sepia">Sepia</option>
+      <option value="invert">Negativ</option><option value="blur">Weichzeichner</option><option value="pixelate">Verpixeln</option></select></label>
+    <div class="row"><span>Stärke</span><input type="range" min="0" max="100" data-bind="effects.filter.amount"><output></output></div>
+  </div>
+  <div class="tabpane" id="fx-mirror">
+    <label class="check"><input type="checkbox" data-bind="effects.mirror.h"> Horizontal spiegeln (links ↔ rechts)</label>
+    <label class="check"><input type="checkbox" data-bind="effects.mirror.v"> Vertikal spiegeln (oben ↔ unten)</label>
+  </div>
+  <div class="tabpane" id="fx-water">
+    <label class="check"><input type="checkbox" data-bind="effects.watermark.enabled"> Wasserzeichen einblenden</label>
+    <div class="row"><button class="small" id="fx-wm-pick">Bild wählen …</button><span id="fx-wm-name" class="muted"></span><button class="small" id="fx-wm-clear">Entfernen</button></div>
+    <div class="grid2"><label>Position <select data-bind="effects.watermark.position">
+      <option value="tl">Oben links</option><option value="tr">Oben rechts</option><option value="bl">Unten links</option><option value="br">Unten rechts</option><option value="c">Mitte</option></select></label></div>
+    <div class="row"><span>Größe</span><input type="range" min="5" max="80" data-bind="effects.watermark.size"><output></output></div>
+    <div class="row"><span>Deckkraft</span><input type="range" min="5" max="100" data-bind="effects.watermark.opacity"><output></output></div>
+  </div>
+  <div class="tabpane" id="fx-keys">
+    <label class="check"><input type="checkbox" data-bind="effects.keys.enabled"> Tastenanschläge einblenden</label>
+    <p class="hint" id="fx-keys-hint"></p>
+    <div class="grid2">
+      <label>Position <select data-bind="effects.keys.position"><option value="bl">Unten links</option><option value="bc">Unten Mitte</option><option value="br">Unten rechts</option><option value="tc">Oben Mitte</option></select></label>
+      <label>Schriftfarbe <input type="color" data-bind="effects.keys.color"></label>
+      <label>Hintergrund <input type="color" data-bind="effects.keys.bg"></label>
+    </div>
+    <div class="row"><span>Größe</span><input type="range" min="16" max="72" data-bind="effects.keys.size"><output></output></div>
+    <div class="row"><span>Anzeigedauer (s)</span><input type="range" min="1" max="6" data-bind="effects.keys.hold"><output></output></div>
+  </div>
+  <div class="tabpane" id="fx-bg">
+    <label class="check"><input type="checkbox" data-bind="effects.chroma.enabled"> Hintergrund entfernen (Farbe ausblenden / Chroma-Key)</label>
+    <p class="hint">Entfernt eine einfarbige Fläche (z. B. grüne Wand) hinter der Person. Es wird keine KI-Personenerkennung verwendet.</p>
+    <div class="grid2">
+      <label>Wirkt auf <select data-bind="effects.chroma.target"><option value="camera">Kameraüberlagerung</option><option value="source">Quelle (bei Webcam)</option></select></label>
+      <label>Zu entfernende Farbe <input type="color" data-bind="effects.chroma.color"></label>
+      <label>Ersatzfarbe (bei Quelle) <input type="color" data-bind="effects.chroma.bg"></label>
+    </div>
+    <div class="row"><span>Toleranz</span><input type="range" min="5" max="100" data-bind="effects.chroma.tolerance"><output></output></div>
+    <div class="row"><span>Weiche Kante</span><input type="range" min="0" max="50" data-bind="effects.chroma.softness"><output></output></div>
+  </div>
+  <div class="dlg-foot"><button class="primary" data-close>Schließen</button></div>
+</dialog>
+
+<!-- Optionen -->
+<dialog id="dlg-options" class="dlg">
+  <h2>Optionen</h2>
+  <div class="tabs">
+    <button data-tab="op-general" class="on">Allgemein</button><button data-tab="op-folders">Ordner</button><button data-tab="op-keys">Tastenkürzel</button>
+  </div>
+  <div class="tabpane on" id="op-general">
+    <label class="check"><input type="checkbox" data-bind="general.minimizeOnRecord"> Fenster beim Start der Aufnahme minimieren</label>
+    <label class="check"><input type="checkbox" data-bind="output.cursor"> Mauszeiger mit aufnehmen</label>
+    <label class="check"><input type="checkbox" data-bind="general.openAfter"> Aufnahme nach dem Stoppen öffnen</label>
+    <label class="check"><input type="checkbox" data-bind="general.trayOnClose"> Beim Schließen im Infobereich (Tray) weiterlaufen</label>
+    <label class="check"><input type="checkbox" data-bind="general.autostart"> Mit Windows starten (minimiert)</label>
+    <label>Countdown vor der Aufnahme (Sekunden) <input type="number" min="0" max="30" data-bind="general.countdown" data-num></label>
+  </div>
+  <div class="tabpane" id="op-folders">
+    <label>Aufnahmen (Video)</label>
+    <div class="row"><input id="op-video-folder" type="text" readonly><button class="small" id="op-pick-video">Ändern …</button></div>
+    <label>Schnappschüsse</label>
+    <div class="row"><input id="op-shot-folder" type="text" readonly><button class="small" id="op-pick-shot">Ändern …</button></div>
+    <div class="grid2">
+      <label>Schnappschuss-Format <select data-bind="output.shotFormat"><option value="png">PNG</option><option value="jpg">JPG</option></select></label>
+    </div>
+    <label>Dateiname <input type="text" data-bind="output.namePattern" size="36"></label>
+    <p class="hint">Platzhalter: {datum} {zeit}. Die Endung wird automatisch ergänzt.</p>
+  </div>
+  <div class="tabpane" id="op-keys">
+    <label>Aufnahme starten / stoppen <input type="text" data-bind="hotkeys.record"></label>
+    <label>Pause / Fortsetzen <input type="text" data-bind="hotkeys.pause"></label>
+    <label>Schnappschuss <input type="text" data-bind="hotkeys.shot"></label>
+    <p class="hint">Schreibweise z. B. CommandOrControl+Shift+R oder F9. Gelten systemweit.</p>
+  </div>
+  <div class="dlg-foot"><button class="primary" data-close>Schließen</button></div>
+</dialog>
+
+<!-- Zeitplan -->
+<dialog id="dlg-schedule" class="dlg wide">
+  <h2>Zeitplan</h2>
+  <p class="hint" id="sch-hint"></p>
+  <table class="tbl" id="sch-table">
+    <thead><tr><th>Aktiv</th><th>Name</th><th>Wann</th><th>Dauer</th><th>Quelle</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div class="row"><button class="small" id="sch-add">Neuer Eintrag</button></div>
+  <form id="sch-form" class="sch-form" hidden>
+    <h3 id="sch-form-title">Eintrag</h3>
+    <div class="grid2">
+      <label>Name <input type="text" id="sch-name"></label>
+      <label>Quelle <select id="sch-source"><option value="current">Aktuell gewählte Quelle</option><option value="screen">Bildschirm</option><option value="webcam">Webcam</option><option value="netcam">Netzwerkkamera</option><option value="device">Videogerät</option></select></label>
+      <label>Wiederholung <select id="sch-repeat"><option value="once">Einmalig</option><option value="daily">Täglich</option><option value="weekly">Wöchentlich</option></select></label>
+      <label id="sch-date-l">Datum <input type="date" id="sch-date"></label>
+      <label>Uhrzeit <input type="time" id="sch-time" value="08:00"></label>
+      <label>Dauer (Minuten) <input type="number" id="sch-dur" min="1" max="1440" value="60"></label>
+    </div>
+    <div class="days" id="sch-days"></div>
+    <label>Zielordner (leer = Standardordner)</label>
+    <div class="row"><input type="text" id="sch-folder" readonly><button type="button" class="small" id="sch-pick">…</button><button type="button" class="small" id="sch-folder-clear">Standard</button></div>
+    <label class="check"><input type="checkbox" id="sch-quit"> Programm nach der Aufnahme beenden</label>
+    <div class="dlg-foot"><button type="button" id="sch-cancel">Abbrechen</button><button type="submit" class="primary">Übernehmen</button></div>
+  </form>
+  <div class="dlg-foot" id="sch-foot"><button class="primary" data-close>Schließen</button></div>
+</dialog>
+
+<dialog id="dlg-about" class="dlg">
+  <h2>Desktopaufnahme</h2>
+  <p id="about-text"></p>
+  <div class="dlg-foot"><button class="primary" data-close>OK</button></div>
+</dialog>
+
+<script src="effects.js"></script>
+<script src="recorder.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
